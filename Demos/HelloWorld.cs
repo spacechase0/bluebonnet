@@ -11,6 +11,8 @@ namespace SpaceFlint.Demos
         // entrypoint when C# is running on the CLR
         static void Main(string[] args)
         {
+            Console.WriteLine( "Meow purr!" );
+            /*
             "Hello, World!"
                 .AsParallel().WithDegreeOfParallelism(32)
                 .Select((ch, idx)
@@ -18,6 +20,7 @@ namespace SpaceFlint.Demos
                 .ForAll(x => {
                     Thread.Sleep(x.theIndex * 200);
                     Console.Write(x.theChar); });
+            */
         }
 
         // JVM entrypoint is a lowercase "main" method

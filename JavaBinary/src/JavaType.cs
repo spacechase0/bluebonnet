@@ -118,7 +118,7 @@ namespace SpaceFlint.JavaBinary
             while (rank-- > 0)
                 str += "[]";
 
-            return str;
+            return string.IsNullOrEmpty(str) ? "<empty type name what is going on>" : str;
         }
 
 

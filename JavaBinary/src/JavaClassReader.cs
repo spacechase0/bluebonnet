@@ -19,7 +19,7 @@ namespace SpaceFlint.JavaBinary
             rdr.Where.Push($"reading class '{Name}' version {majorVersion}.{minorVersion}");
 
             ushort superConstIndex = rdr.Read16();
-            if (! (superConstIndex == 0 && Name == "java.lang.Object"))
+            if (! (superConstIndex == 0 && Name == "java.lang.Object") && (Flags & JavaAccessFlags.ACC_MODULE) == 0)
                 Super = rdr.ConstClass(superConstIndex).ClassName;
 
             var interfaceCount = rdr.Read16();

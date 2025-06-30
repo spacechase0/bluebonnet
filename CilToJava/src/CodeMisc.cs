@@ -269,7 +269,9 @@ namespace SpaceFlint.CilToJava
                     boxedType.BoxValue(code);
                     return;
                 }
+                Console.WriteLine("apparently that didn't work");
             }
+            Console.WriteLine("some sort of problem with ldobj " + data?.GetType() + " = " + data);
             throw new InvalidProgramException();
 
 

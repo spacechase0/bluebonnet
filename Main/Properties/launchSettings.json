@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Main": {
+      "commandName": "Project"
+    },
+    "Main Test": {
+      "commandName": "Project",
+      "commandLineArgs": "**/mscorlib.dll testmscorlib.jar :System.Collections.Generic.IEnumerable`1",
+      "workingDirectory": "$(ProjectDir)"
+    }
+  }
+}

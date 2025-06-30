@@ -25,6 +25,7 @@ namespace SpaceFlint.JavaBinary
         ACC_SYNTHETIC       = 0x1000,
         ACC_ANNOTATION      = 0x2000,
         ACC_ENUM            = 0x4000,
+        ACC_MODULE          = 0x8000,
     }
 
 }

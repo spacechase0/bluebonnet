@@ -2,3 +2,11 @@
 .vs/
 packages/
 /TODO
+obj/
+bin/
+*.jar
+*.class
+*.exe
+*.dll
+*.csproj.old
+*.csproj.user

@@ -89,6 +89,12 @@ namespace SpaceFlint.JavaBinary
                 case JavaConstant.InvokeDynamic.tag:
                     return new JavaConstant.InvokeDynamic(rdr);
 
+                case JavaConstant.Module.tag:
+                    return new JavaConstant.Module(rdr);
+
+                case JavaConstant.Package.tag:
+                    return new JavaConstant.Package(rdr);
+
                 default:
                     throw rdr.Where.Exception($"invalid tag {tag} in constant pool");
             }
@@ -114,7 +120,12 @@ namespace SpaceFlint.JavaBinary
             {
                 return o;
             }
-            throw Where.Exception($"expected constant of type '{typeof(T).Name}' at index {index}");
+            string addendum = "";
+            if (index > 0 && index < pool.Count)
+            {
+                addendum = $", got constant of type {pool[index]?.GetType()?.Name ?? "<null>"}";
+            }
+            throw Where.Exception($"expected constant of type '{typeof(T).Name}' at index {index}{addendum}");
         }
 
 

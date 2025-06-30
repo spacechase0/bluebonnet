@@ -38,13 +38,13 @@ namespace SpaceFlint.JavaBinary
 
 
 
-        public static JavaClassEx ReadClassEx(System.IO.Compression.ZipArchiveEntry entry,
-                                              bool withCode = true)
+        public static JavaClassEx ReadClassEx(ICSharpCode.SharpZipLib.Zip.ZipFile zip, ICSharpCode.SharpZipLib.Zip.ZipEntry entry,
+                                              bool withCode = true, bool isJmod = false)
         {
-            if (entry.Length > 4 &&
-                    (! string.IsNullOrEmpty(Path.GetFileName(entry.FullName))))
+            if (entry.Size > 4 &&
+                    (! string.IsNullOrEmpty(Path.GetFileName(entry.Name))))
             {
-                using (var stream = entry.Open())
+                using (var stream = zip.GetInputStream(entry))
                 {
                     var (b0, b1, b2, b3) = (stream.ReadByte(), stream.ReadByte(),
                                             stream.ReadByte(), stream.ReadByte());
@@ -59,13 +59,18 @@ namespace SpaceFlint.JavaBinary
                             stream.CopyTo(stream2);
                             stream2.Position = 0;
 
-                            var whereText = $"entry '{entry.FullName}' in archive";
+                            var whereText = $"entry '{entry.Name}' in archive";
                             var rdr = new JavaReader(stream2, whereText, withCode);
 
                             if (rdr.Class != null)
                             {
+                                string classPath = entry.Name;
+                                if (isJmod)
+                                {
+                                    classPath = classPath.Substring("classes/".Length);
+                                }
                                 rdr.Class.PackageNameLength =
-                                        (short) Path.GetDirectoryName(entry.FullName).Length;
+                                        (short) Path.GetDirectoryName(classPath).Length;
 
                                 return new JavaClassEx
                                 {
@@ -83,9 +88,9 @@ namespace SpaceFlint.JavaBinary
 
 
 
-        public static JavaClass ReadClass(System.IO.Compression.ZipArchiveEntry entry,
-                                          bool withCode = true)
-            => ReadClassEx(entry, withCode)?.JavaClass;
+        public static JavaClass ReadClass(ICSharpCode.SharpZipLib.Zip.ZipFile zip, ICSharpCode.SharpZipLib.Zip.ZipEntry entry,
+                                          bool withCode = true, bool isJmod = false)
+            => ReadClassEx(zip, entry, withCode, isJmod)?.JavaClass;
 
 
 
@@ -350,6 +355,32 @@ namespace SpaceFlint.JavaBinary
             return dynamicConst.cached;
         }
 
+
+        public string ConstModule(int constantIndex)
+        {
+            var moduleConst = constants.Get<JavaConstant.Module>(constantIndex, Where);
+
+            if (moduleConst.cached == null)
+            {
+                var name = ConstUtf8(moduleConst.nameIndex);
+                moduleConst.cached = name;
+            }
+
+            return moduleConst.cached;
+        }
+
+        public string CosntPackage(int constantIndex)
+        {
+            var packageConst = constants.Get<JavaConstant.Package>(constantIndex, Where);
+
+            if (packageConst.cached == null)
+            {
+                var name = ConstUtf8(packageConst.nameIndex);
+                packageConst.cached = name;
+            }
+
+            return packageConst.cached;
+        }
     }
 
 }

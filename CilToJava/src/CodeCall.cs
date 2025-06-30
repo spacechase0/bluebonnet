@@ -91,7 +91,7 @@ namespace SpaceFlint.CilToJava
                     code.NewInstruction(0xB8 /* invokestatic */,
                                         new JavaType(0, 0, newClass.JavaName), newMethod);
 
-                    int n = callMethod.Parameters.Count;
+                    int n = callMethod.Parameters.Count - (callMethod.HasDummyClassArg ? 1 : 0);
                     while (n-- > 0)
                         stackMap.PopStack(CilMain.Where);
                     stackMap.PushStack(newClass);
@@ -149,6 +149,8 @@ namespace SpaceFlint.CilToJava
 
                     code.NewInstruction(0xB6 /* invokevirtual */, newClass, callMethod);
 
+                    if (callMethod.HasDummyClassArg) //added by me earlier, suddenly questioning if this is right even though it feels like it should be...
+                        numNonGeneric--;
                     while (numNonGeneric-- > 0)
                         stackMap.PopStack(CilMain.Where);
                 }
@@ -1077,6 +1079,11 @@ namespace SpaceFlint.CilToJava
 
                 CodeArrays.InitializeArray(fieldDef.InitialValue, code);
             }
+
+            // TODO: RuntimeHelper.CreateSpan stuff, specific example of it not working:
+            // Bluebonnet error : not followed by call to GetTypeFromHandle or InitializeArray in 'ldtoken' instruction at offset 003A in method 'Fill' in class 'System.Linq.Enumerable/RangeIterator' in class 'System.Linq.Enumerable' in assembly C:\Program Files\dotnet\shared\Microsoft.NETCore.App\8.0.8\System.Linq.dll
+            // Some cases seem to be fine though???
+            // Note that that class is entirely excluded right now anyways because of other confusing issues, see comments in body of TypeBuilder.ImportMethods
 
             else if (cilInst.Operand is MethodReference methodRef)
             {

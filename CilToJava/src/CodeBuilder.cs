@@ -60,7 +60,7 @@ namespace SpaceFlint.CilToJava
             {
                 if (e is JavaException)
                     throw;
-                #if DEBUGDIAG
+                #if DEBUG
                 Console.WriteLine(e);
                 #endif
                 if (o != null && o.cilInst != null)

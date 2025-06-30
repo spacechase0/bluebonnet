@@ -169,6 +169,9 @@ public class DotNetImporter
 
         foreach (var jclass in classes)
         {
+            if (jclass.Name == "module-info" || jclass.Name == "package-info")
+                continue;
+
             if (CreateCilTypeForClass(jclass))
                 classes2.Add(jclass);
 

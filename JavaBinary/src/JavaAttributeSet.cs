@@ -95,6 +95,15 @@ namespace SpaceFlint.JavaBinary
                     case "RuntimeInvisibleAnnotations":
                     case "RuntimeInvisibleParameterAnnotations":
                     case "Deprecated":
+                    case "Module": // might need to impl later? TODO: understand modules
+                    case "ModulePackages": // might need to impl later? TODO: understand modules
+                    case "ModuleHashes": // might need to impl later? TODO: understand modules
+                    case "ModuleTarget": // might need to impl later? TODO: understand modules
+                    case "ModuleResolution": // might need to impl later? TODO: understand modules
+                    case "NestHost": // might need to impl later? not sure if possible in .net though...
+                    case "NestMembers": // might need to impl later? not sure if possible in .net though...
+                    case "PermittedSubclasses": // might need to impl later? perhaps just mark affected classes with sealed for now...
+                    case "Record": // perhaps need to implement at some point
                         attr = new JavaAttribute.Generic(rdr, name, length);
                         break;
 

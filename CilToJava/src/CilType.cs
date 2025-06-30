@@ -135,7 +135,9 @@ namespace SpaceFlint.CilToJava
                 var modifier = (fromType as IModifierType).ModifierType.FullName;
                 if (modifier == "System.Runtime.CompilerServices.IsVolatile")
                     Flags |= VOLATILE;
-                else if (modifier != "System.Runtime.CompilerServices.IsExternalInit")
+                else if (modifier != "System.Runtime.CompilerServices.IsExternalInit" &&
+                         modifier != "System.Runtime.InteropServices.InAttribute" && // encountered an error with this, don't know much about it but it doesn't seem important for the whole C#-to-Java use case (at least from a quick google search), so let's just pretend it doesn't exist, shall we?
+                         modifier != "System.Runtime.InteropServices.InAttribute") // this one too for good measure
                     throw CilMain.Where.Exception($"unknown modifier '{modifier}'");
             }
 

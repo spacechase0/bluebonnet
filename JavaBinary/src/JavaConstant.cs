@@ -511,6 +511,63 @@ namespace SpaceFlint.JavaBinary
             }
         }
 
+        public class Module : JavaConstant
+        {
+            public const byte tag = 19;
+            public ushort nameIndex;
+            public string cached;
+
+            public Module(JavaReader rdr)
+            {
+                nameIndex = rdr.Read16();
+            }
+
+            public Module(ushort _nameIndex)
+            {
+                nameIndex = _nameIndex;
+            }
+
+            public override bool Equals(JavaConstant _other)
+            {
+                var other = _other as JavaConstant.Module;
+                return (nameIndex == other?.nameIndex);
+            }
+
+            public override void Write(JavaWriter wtr)
+            {
+                wtr.Write8(tag);
+                wtr.Write16(nameIndex);
+            }
+        }
+
+        public class Package : JavaConstant
+        {
+            public const byte tag = 20;
+            public ushort nameIndex;
+            public string cached;
+
+            public Package(JavaReader rdr)
+            {
+                nameIndex = rdr.Read16();
+            }
+
+            public Package(ushort _nameIndex)
+            {
+                nameIndex = _nameIndex;
+            }
+
+            public override bool Equals(JavaConstant _other)
+            {
+                var other = _other as JavaConstant.Package;
+                return (nameIndex == other?.nameIndex);
+            }
+
+            public override void Write(JavaWriter wtr)
+            {
+                wtr.Write8(tag);
+                wtr.Write16(nameIndex);
+            }
+        }
     }
 
 }

@@ -159,6 +159,7 @@ namespace SpaceFlint.JavaBinary
 
                     else if (! topElem.AssignableTo(oldElem))
                     {
+                        Console.WriteLine($"not same because top elem isn't assignable to old elem, whatever that means! ({topElem} vs {oldElem})");
                         same = false;
                         break;
                     }
@@ -195,6 +196,8 @@ namespace SpaceFlint.JavaBinary
 
             int numStack = topStack.Count;
             same &= (numStack == oldStack.Count);
+            if (numStack != oldStack.Count)
+                Console.WriteLine($"not same because the top stack and old stack don't have the same count or something????? ({numStack} vs {oldStack.Count})");
 
             if (same)
             {
@@ -229,6 +232,7 @@ namespace SpaceFlint.JavaBinary
 
                         else
                         {
+                            Console.WriteLine($"not same because top elem and old elem were different and couldn't be reconciled, or something??? ({topStack[i]} vs {oldElem})");
                             same = false;
                             break;
                         }
@@ -238,7 +242,7 @@ namespace SpaceFlint.JavaBinary
 
             if (! same)
             {
-                #if DEBUGDIAG
+                #if DEBUG
                 var (old1, old2) = FrameToString(offsetLabel);
                 var (top1, top2) = FrameToString();
                 Console.WriteLine("old frame = " + old1 + " ; " + old2);

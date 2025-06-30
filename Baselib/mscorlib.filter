@@ -37,6 +37,7 @@ System.UnhandledExceptionEventArgs
 System.UnhandledExceptionEventHandler
 System.Version
 System.RankException
+System.ReadOnlySpan`*
 
 System.StringComparer
 System.CultureAwareComparer
@@ -211,11 +212,13 @@ System.Reflection.InterfaceMapping
 System.Reflection.InvalidFilterCriteriaException
 System.Reflection.IReflectableType
 System.Reflection.ParameterModifier
+System.Reflection.SignatureConstructedGenericType
 System.Reflection.TypeFilter
 System.Reflection.TargetParameterCountException
 System.Reflection.TargetInvocationException
 System.IRuntimeMethodInfo
 System.TimeSpan
+System.IAsyncDisposable
 System.IAsyncResult
 System.AsyncCallback
 

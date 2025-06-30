@@ -6,9 +6,12 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using SpaceFlint.JavaBinary;
+using ICSharpCode.SharpZipLib.Zip;
+using System.Linq;
 
 public class CilTool
 {
+
 
     static int Main(string[] args)
     {
@@ -19,36 +22,63 @@ public class CilTool
         if (filter.Count == 0)
             filter = null;
 
+        var outputPath = (numArgs == 2 ? args[1] : null);
+
         try
         {
-            using (var file = File.OpenRead(ResolveInputPath(args[0])))
+            if (Directory.Exists(args[0]))
             {
-                var (byte0, byte1) = (file.ReadByte(), file.ReadByte());
-
-                if (    (byte0 == 0xCA && byte1 == 0xFE)    // class file
-                     || (byte0 == 0x50 && byte1 == 0x4B)    // zip file
-                     || (byte0 == 0x4D && byte1 == 0x5A))   // exe file
+                List<JavaClass> results = new();
+                foreach (var entry in Directory.GetFiles(args[0]))
                 {
-                    file.Position = 0;
-
-                    var outputPath = (numArgs == 2 ? args[1] : null);
-
-                    if (byte0 == 0x4D)
+                    JavaFileType? jtype = entry switch
                     {
-                        MainDotNet(file, outputPath, filter);
+                        _ when entry.EndsWith(".class", StringComparison.InvariantCultureIgnoreCase) => JavaFileType.ClassFile,
+                        _ when entry.EndsWith(".jar", StringComparison.InvariantCultureIgnoreCase) => JavaFileType.StandardArchive,
+                        _ when entry.EndsWith(".jmod", StringComparison.InvariantCultureIgnoreCase) => JavaFileType.JmodArchive,
+                        _ => null,
+                    };
+
+                    if (jtype.HasValue)
+                    {
+                        results.AddRange(MainJavaProcess(File.OpenRead(entry), jtype.Value, outputPath, filter));
+                    }
+                }
+
+                MainJavaOutput(results, outputPath);
+            }
+            else
+            {
+                using (var file = File.OpenRead(ResolveInputPath(args[0])))
+                {
+                    var (byte0, byte1) = (file.ReadByte(), file.ReadByte());
+
+                    if ((byte0 == 0xCA && byte1 == 0xFE)    // class file
+                         || (byte0 == 0x50 && byte1 == 0x4B)    // zip file
+                         || (byte0 == 0x4D && byte1 == 0x5A)    // exe file
+                         || (byte0 == 0x4A && byte1 == 0x4D))   // jmod file (literally a zip file with a few extra bytes at the beginning)
+                    {
+                        file.Position = 0;
+
+                        if (byte0 == 0x4D)
+                        {
+                            MainDotNet(file, outputPath, filter);
+                        }
+                        else
+                        {
+                            JavaFileType jtype = JavaFileType.ClassFile;
+                            if (byte0 == 0x50 || byte0 == 0x4A)
+                                jtype = byte0 == 0x4A ? JavaFileType.JmodArchive : JavaFileType.StandardArchive;
+                            MainJavaOutput(MainJavaProcess(file, jtype, outputPath, filter), outputPath);
+                        }
                     }
                     else
                     {
-                        var isArchive = (byte0 == 0x50);
-                        MainJava(file, isArchive, outputPath, filter);
+                        Console.WriteLine(
+                            $"error: cannot determine type of input file {file.Name}");
+                        Console.WriteLine();
+                        return 1;
                     }
-                }
-                else
-                {
-                    Console.WriteLine(
-                        $"error: cannot determine type of input file {file.Name}");
-                    Console.WriteLine();
-                    return 1;
                 }
             }
         }
@@ -61,7 +91,7 @@ public class CilTool
             Console.WriteLine();
             Console.WriteLine(pgmName + " error: " + e.Message + eName);
             Console.WriteLine();
-            #if DEBUGDIAG
+            #if DEBUG
             Console.WriteLine(e);
             #endif
             return 1;
@@ -80,6 +110,8 @@ public class CilTool
             var arg = args[n - 1];
             if (arg == null || arg.Length < 2 || arg[0] != ':')
                 break;
+            if (arg.StartsWith(":^")) // ':' seems to indicate a filter item, while I'm using ^ to indicate a 'comment' (since they're pulled from a file)
+                continue;
             var regexString =
                     "^" + Regex.Escape(arg.Substring(1))
                                .Replace(@"\*", ".*").Replace(@"\?", ".") + "$";
@@ -91,6 +123,7 @@ public class CilTool
             Console.WriteLine($"usage: {name} inputfile [outputfile] [:filter]");
             Console.WriteLine("If one file is specified, prints contents of Java class/JAR or .Net assembly.");
             Console.WriteLine("If two files are specified, converts Java class/JAR to .Net assembly or vice versa.");
+            Console.WriteLine("If inputFile is actually a directory, it will convert all Java-type files in the directory to a single .Net assembly. (TODO: The other direction)");
             n = -1;
         }
         return n;
@@ -104,6 +137,7 @@ public class CilTool
         ModuleDefinition module = ReadModuleAndSymbols(inputStream);
 
         var moduleTypes = new List<TypeDefinition>(module.Types);
+        moduleTypes.AddRange(module.ExportedTypes.Select(et => et.Resolve())); // For [assembly:TypeForwardedTo] uses, like mscorlib does nowadays
         if (moduleTypes[0].FullName == "<Module>")
             moduleTypes.RemoveAt(0);
 
@@ -184,23 +218,29 @@ public class CilTool
         #endif
     }
 
+    enum JavaFileType
+    {
+        ClassFile,
+        StandardArchive,
+        JmodArchive,
+    }
 
-
-    static void MainJava(Stream inputStream, bool isArchive, string outputPath,
+    static List<JavaClass> MainJavaProcess(Stream inputStream, JavaFileType jtype, string outputPath,
                          List<Regex> filter)
     {
         var classes = new List<JavaClass>();
         bool printing = (outputPath == null);
 
-        if (isArchive)
+        if (jtype != JavaFileType.ClassFile)
         {
-            using (var archive = new ZipArchive(inputStream, ZipArchiveMode.Read))
+            using (var archive = new ICSharpCode.SharpZipLib.Zip.ZipFile(inputStream))
             {
-                foreach (var entry in archive.Entries)
+                foreach (ZipEntry entry in archive)
                 {
-                    if (filter == null || MatchFilter(entry.FullName, true, filter))
+                    if (!entry.IsFile) continue;
+                    if (filter == null || MatchFilter(entry.Name, true, filter))
                     {
-                        var jclass = JavaReader.ReadClass(entry, printing);
+                        var jclass = JavaReader.ReadClass(archive, entry, printing, isJmod: jtype == JavaFileType.JmodArchive);
                         if (jclass != null)
                             classes.Add(jclass);
                     }
@@ -214,6 +254,13 @@ public class CilTool
             if (filter != null)
                 Console.WriteLine("warning: filters are ignored for a .class file");
         }
+
+        return classes;
+    }
+
+    static void MainJavaOutput(List<JavaClass> classes, string outputPath)
+    {
+        bool printing = (outputPath == null);
 
         if (printing)
         {
